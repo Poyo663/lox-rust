@@ -7,7 +7,7 @@ use crate::util::scanner::Scanner;
 pub fn run_file(file_path: &str) {
     let file_contents = String::from_utf8(fs::read(file_path).unwrap()).unwrap();
 
-    run(&file_contents);
+    run(file_contents);
 }
 pub fn run_prompt() {
     println!("Starting prompt:");
@@ -18,14 +18,17 @@ pub fn run_prompt() {
         if buffer == "exit()\n" {
             break;
         }
-        run(&buffer);
+        run(buffer);
     }
 }
-pub fn run(source: &str) {
-    let scanner = Scanner::new(source.to_string());
+pub fn run(source: String) {
+    let mut scanner = Scanner::new(source.to_string());
     let tokens = scanner.scan_tokens();
 
     for token in tokens {
         println!("{:?}", token);
     }
+}
+pub fn error(line: u32, message: &str) {
+    eprintln!("[line {line}] Error: {message}");
 }

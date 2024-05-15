@@ -1,5 +1,7 @@
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Token {
+    SPECIAL_CHARACTER,
     // Single-character tokens.
     LEFT_PAREN,
     RIGHT_PAREN,
@@ -26,7 +28,7 @@ pub enum Token {
     //literal
     IDENTIFIER,
     STRING(String),
-    NUMBER(i32),
+    NUMBER(f64),
 
     // Keywords.
     AND,
@@ -45,4 +47,6 @@ pub enum Token {
     TRUE,
     VAR,
     WHILE,
+
+    EOF,
 }
