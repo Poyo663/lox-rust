@@ -1,26 +1,27 @@
 use crate::{error, util::token::Token};
-use std::iter;
+use std::{collections::HashMap, iter};
 
 #[derive(Debug)]
 pub struct Scanner {
     source: String,
-    line: u32,
 }
 impl Scanner {
     pub fn new(source: String) -> Scanner {
-        return Scanner { source, line: 1 };
+        return Scanner { source };
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
+    pub fn scan_tokens(&self) -> Vec<Token> {
+        let keywords = Token::get_keywords();
         let mut tokens: Vec<Token> = Vec::new();
 
         let binding = self.source.clone();
         let mut bytes = binding.as_bytes().iter().peekable();
         let mut c = bytes.next();
         let mut i = 0;
+        let mut lines = 1;
 
         while c != None {
-            let token = self.scan_token(&c.unwrap(), &mut bytes, &mut i);
+            let token = self.scan_token(&c.unwrap(), &mut bytes, &mut i, &keywords, &mut lines);
             match token {
                 Ok(ok) => {
                     if let Token::SPECIAL_CHARACTER = ok {
@@ -29,7 +30,7 @@ impl Scanner {
                     }
                 }
                 Err(e) => {
-                    error(self.line, e);
+                    error(lines, e);
                 }
             }
 
@@ -45,6 +46,8 @@ impl Scanner {
         c: &u8,
         iter: &mut iter::Peekable<I>,
         current: &mut usize,
+        keywords: &HashMap<String, Token>,
+        lines: &mut u32,
     ) -> Result<Token, &str> {
         match c {
             b'(' => Ok(Token::LEFT_PAREN),
@@ -93,15 +96,41 @@ impl Scanner {
             b' ' => Ok(Token::SPECIAL_CHARACTER),
             b'\r' => Ok(Token::SPECIAL_CHARACTER),
             b'\t' => Ok(Token::SPECIAL_CHARACTER),
-            b'\n' => Ok(Token::SPECIAL_CHARACTER),
+            b'\n' => {
+                *lines += 1;
+                Ok(Token::SPECIAL_CHARACTER)
+            }
             b'\"' => self.get_string(iter, current),
             c => {
                 if c.is_ascii_digit() {
                     return self.get_number(iter, current);
+                } else if c.is_ascii_alphabetic() {
+                    return self.get_identifier(iter, current, keywords);
                 }
                 Err("Unexpected character")
             }
         }
+    }
+    fn get_identifier<'a, I: Iterator<Item = &'a u8>>(
+        &self,
+        iter: &mut iter::Peekable<I>,
+        current: &mut usize,
+        keywords: &HashMap<String, Token>,
+    ) -> Result<Token, &str> {
+        let start = *current;
+
+        while iter.peek().unwrap().is_ascii_alphanumeric() {
+            iter.next();
+            *current += 1;
+        }
+        let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec()).unwrap();
+        iter.next();
+        *current += 1;
+
+        if keywords.contains_key(&a) {
+            return Ok(keywords.get(&a).unwrap().clone());
+        }
+        return Ok(Token::IDENTIFIER);
     }
     fn get_string<'a, I: Iterator<Item = &'a u8>>(
         &self,
@@ -124,7 +153,7 @@ impl Scanner {
                 return Err("Unterminated string");
             }
         }
-        let a = String::from_utf8(self.source.as_bytes()[start..*current].to_vec());
+        let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec());
         return match a {
             Ok(ok) => Ok(Token::STRING(ok)),
             Err(_) => Err("Invalid UTF-8 characters"),
@@ -136,20 +165,25 @@ impl Scanner {
         current: &mut usize,
     ) -> Result<Token, &str> {
         let start = *current;
-        while iter.peek().unwrap().is_ascii_digit() {
-            iter.next();
+        let mut b = iter.next().unwrap();
+        while (*b).is_ascii_digit() {
+            b = iter.next().unwrap();
             *current += 1;
         }
-        if *iter.next().unwrap() == b'.' {
-            if iter.peek().unwrap().is_ascii_digit() {
-                while iter.peek().unwrap().is_ascii_digit() {
-                    iter.next();
+        if *b == b'.' {
+            let mut b = iter.next().unwrap();
+            if (*b).is_ascii_digit() {
+                while (*b).is_ascii_digit() {
+                    b = iter.next().unwrap();
                     *current += 1;
                 }
-                let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec());
+                *current += 2;
+                let a = String::from_utf8(self.source.as_bytes()[start..*current].to_vec());
                 let a = match a {
                     Ok(ok) => match ok.parse::<f64>() {
-                        Ok(k) => Ok(k),
+                        Ok(k) => {
+                            Ok(k)
+                        }
                         Err(_) => Err("Could parse string to number"),
                     },
                     Err(_) => Err("Invalid UTF-8 characters"),
@@ -162,7 +196,8 @@ impl Scanner {
                 return Err("Did not find digit after '.'");
             }
         }
-        let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec());
+        *current += 1;
+        let a = String::from_utf8(self.source.as_bytes()[start..*current].to_vec());
         let a = match a {
             Ok(ok) => match ok.parse::<f64>() {
                 Ok(k) => Ok(k),

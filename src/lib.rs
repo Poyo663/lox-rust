@@ -22,7 +22,7 @@ pub fn run_prompt() {
     }
 }
 pub fn run(source: String) {
-    let mut scanner = Scanner::new(source.to_string());
+    let scanner = Scanner::new(source.to_string());
     let tokens = scanner.scan_tokens();
 
     for token in tokens {

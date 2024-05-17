@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Token {
     SPECIAL_CHARACTER,
@@ -49,4 +51,25 @@ pub enum Token {
     WHILE,
 
     EOF,
+}
+impl Token {
+    pub fn get_keywords() -> HashMap<String, Token> {
+        return HashMap::from([
+            (String::from("and"), Token::AND),
+            (String::from("class"), Token::CLASS),
+            (String::from("else"), Token::ELSE),
+            (String::from("false"), Token::FALSE),
+            (String::from("for"), Token::FOR),
+            (String::from("if"), Token::IF),
+            (String::from("nil"), Token::NIL),
+            (String::from("or"), Token::OR),
+            (String::from("print"), Token::PRINT),
+            (String::from("return"), Token::RETURN),
+            (String::from("super"), Token::SUPER),
+            (String::from("this"), Token::THIS),
+            (String::from("true"), Token::TRUE),
+            (String::from("var"), Token::VAR),
+            (String::from("while"), Token::WHILE),
+        ]);
+    }
 }
