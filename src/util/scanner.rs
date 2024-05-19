@@ -119,18 +119,20 @@ impl Scanner {
     ) -> Result<Token, &str> {
         let start = *current;
 
-        while iter.peek().unwrap().is_ascii_alphanumeric() {
+        while Scanner::is_alphanumeric(iter.peek().unwrap()) {
             iter.next();
             *current += 1;
         }
         let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec()).unwrap();
-        iter.next();
-        *current += 1;
 
         if keywords.contains_key(&a) {
             return Ok(keywords.get(&a).unwrap().clone());
         }
+        println!("{}", a);
         return Ok(Token::IDENTIFIER);
+    }
+    fn is_alphanumeric(c: &u8)-> bool {
+        return (*c >= b'A' && *c <= b'Z') || (*c >= b'a' && *c <= b'z') || *c == b'_';
     }
     fn get_string<'a, I: Iterator<Item = &'a u8>>(
         &self,
