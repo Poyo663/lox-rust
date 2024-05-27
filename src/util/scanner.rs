@@ -42,7 +42,7 @@ impl Scanner {
         return tokens;
     }
     fn scan_token<'a, I: Iterator<Item = &'a u8>>(
-        &self,
+        &'a self,
         c: &u8,
         iter: &mut iter::Peekable<I>,
         current: &mut usize,
@@ -128,17 +128,16 @@ impl Scanner {
         if keywords.contains_key(&a) {
             return Ok(keywords.get(&a).unwrap().clone());
         }
-        println!("{}", a);
         return Ok(Token::IDENTIFIER);
     }
-    fn is_alphanumeric(c: &u8)-> bool {
+    fn is_alphanumeric(c: &u8) -> bool {
         return (*c >= b'A' && *c <= b'Z') || (*c >= b'a' && *c <= b'z') || *c == b'_';
     }
     fn get_string<'a, I: Iterator<Item = &'a u8>>(
         &self,
         iter: &mut iter::Peekable<I>,
         current: &mut usize,
-    ) -> Result<Token, &str> {
+    ) -> Result<Token, &'a str> {
         *current += 1;
         let start = *current;
 
@@ -155,11 +154,8 @@ impl Scanner {
                 return Err("Unterminated string");
             }
         }
-        let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec());
-        return match a {
-            Ok(ok) => Ok(Token::STRING(ok)),
-            Err(_) => Err("Invalid UTF-8 characters"),
-        };
+        let a = String::from_utf8(self.source.as_bytes()[start..*current + 1].to_vec()).unwrap();
+        return Ok(Token::STRING(a));
     }
     fn get_number<'a, I: Iterator<Item = &'a u8>>(
         &self,
@@ -183,9 +179,7 @@ impl Scanner {
                 let a = String::from_utf8(self.source.as_bytes()[start..*current].to_vec());
                 let a = match a {
                     Ok(ok) => match ok.parse::<f64>() {
-                        Ok(k) => {
-                            Ok(k)
-                        }
+                        Ok(k) => Ok(k),
                         Err(_) => Err("Could parse string to number"),
                     },
                     Err(_) => Err("Invalid UTF-8 characters"),

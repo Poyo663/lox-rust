@@ -2,6 +2,8 @@ mod util;
 
 use std::{fs, io};
 
+use util::{parser::Parser, token::Token};
+
 use crate::util::scanner::Scanner;
 
 pub fn run_file(file_path: &str) {
@@ -25,10 +27,11 @@ pub fn run(source: String) {
     let scanner = Scanner::new(source.to_string());
     let tokens = scanner.scan_tokens();
 
-    for token in tokens {
-        println!("{:?}", token);
-    }
+    let parser = Parser::new(tokens);
 }
 pub fn error(line: u32, message: &str) {
     eprintln!("[line {line}] Error: {message}");
+}
+pub fn parse_error(token: Token, line: u32, message: &str) {
+    error(line, format!("{:?}, {}", token, message).as_str());
 }
